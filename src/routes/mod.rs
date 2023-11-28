@@ -1,3 +1,4 @@
+mod always_errors;
 mod hello_world;
 mod middleware_message;
 mod mirror_body_json;
@@ -5,9 +6,13 @@ mod mirror_body_string;
 mod mirror_user_agent;
 mod path_variables;
 mod query_params;
+mod read_middleware_custom_header;
+mod set_middleware_custom_header;
 
+use always_errors::always_errors;
 use axum::{
     http::Method,
+    middleware,
     routing::{get, post},
     Extension, Router,
 };
@@ -18,6 +23,8 @@ use mirror_body_string::mirror_body_string;
 use mirror_user_agent::mirror_user_agent;
 use path_variables::{hard_coded_path, path_variables};
 use query_params::query_params;
+use read_middleware_custom_header::read_middleware_custom_headers;
+use set_middleware_custom_header::set_middleware_custom_header;
 use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Clone)]
@@ -34,6 +41,11 @@ pub fn create_routes() -> Router {
     };
 
     Router::new()
+        .route(
+            "/read_middleware_custom_header",
+            get(read_middleware_custom_headers),
+        )
+        .route_layer(middleware::from_fn(set_middleware_custom_header))
         .route("/", get(hello_world))
         .route("/mirror_body_string", post(mirror_body_string))
         .route("/mirror_body_json", post(mirror_body_json))
@@ -44,4 +56,5 @@ pub fn create_routes() -> Router {
         .route("/middleware_message", get(middleware_message))
         .layer(cors)
         .layer(Extension(shared_data))
+        .route("/always_errors", get(always_errors))
 }
